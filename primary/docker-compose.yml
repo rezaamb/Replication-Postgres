@@ -1,0 +1,23 @@
+version: "3.9"
+services:
+  postgres-primary:
+    image: postgres:16
+    container_name: pg-primary
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: strong_primary_pass
+      POSTGRES_USER: postgres
+      POSTGRES_DB: appdb
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data_primary:/var/lib/postgresql/data
+      - ./config/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - ./init:/docker-entrypoint-initdb.d:ro
+    command: ["-c", "config_file=/etc/postgresql/postgresql.conf",
+              "-c", "hba_file=/etc/postgresql/pg_hba.conf"]
+volumes:
+  pg_data_primary:
+    driver: local
