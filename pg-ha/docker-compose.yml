@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  pg-primary:
+    image: postgres:16
+    container_name: pg-primary
+    networks: [pgnet]
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: appdb
+    volumes:
+      - primary-data:/var/lib/postgresql/data
+      - ./primary/conf.d:/etc/postgresql/conf.d:ro
+      - ./primary/initdb:/docker-entrypoint-initdb.d:ro
+      - ./primary/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    command:
+      - "postgres"
+      - "-c"; "config_file=/var/lib/postgresql/data/postgresql.conf"
+      - "-c"; "include_dir=/etc/postgresql/conf.d"
+      - "-c"; "hba_file=/etc/postgresql/pg_hba.conf"
+    ports:
+      - "5432:5432"
+
+  pg-standby:
+    image: postgres:16
+    container_name: pg-standby
+    depends_on: [pg-primary]
+    networks: [pgnet]
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+    volumes:
+      - standby-data:/var/lib/postgresql/data
+      - ./standby/conf.d:/etc/postgresql/conf.d:ro
+    command: ["postgres","-c","config_file=/var/lib/postgresql/data/postgresql.conf","-c","include_dir=/etc/postgresql/conf.d"]
+    ports:
+      - "5433:5432"
+
+networks:
+  pgnet:
+    external: true
+
+volumes:
+  primary-data:
+  standby-data:
