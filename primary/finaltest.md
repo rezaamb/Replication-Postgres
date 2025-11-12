@@ -10,3 +10,9 @@ docker exec -it pg-primary psql -U postgres -d appdb -c \
 "INSERT INTO customers(firstname) VALUES ('REZA');"
 ```
 
+# check Stream :
+
+```bash
+docker exec -it pg-primary psql -U postgres -d postgres -c \
+"SELECT pid, state, sync_state, client_addr FROM pg_stat_replication;"
+```
