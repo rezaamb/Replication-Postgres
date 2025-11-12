@@ -1,0 +1,34 @@
+version: "3.9"
+services:
+  postgres-replica:
+    image: postgres:16
+    container_name: pg-replica
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: strong_replica_local
+      PGDATA: /var/lib/postgresql/data/pgdata
+      PRIMARY_HOST: 172.18.42.21
+      PRIMARY_PORT: "5432"
+      REPL_USER: admin
+      REPL_PASS: admin
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_data_replica:/var/lib/postgresql/data
+      - ./config/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    command: ["bash","-lc","\
+set -euo pipefail; \
+if [ -z \"$(ls -A /var/lib/postgresql/data/pgdata 2>/dev/null || true)\" ]; then \
+  echo 'Data directory empty: running pg_basebackup...'; \
+  export PGPASSWORD=\"$$REPL_PASS\"; \
+  /usr/lib/postgresql/16/bin/pg_basebackup -h \"$$PRIMARY_HOST\" -p \"$$PRIMARY_PORT\" -D /var/lib/postgresql/data/pgdata -U \"$$REPL_USER\" -Fp -Xs -P -R; \
+else \
+  echo 'Data directory not empty; skipping basebackup.'; \
+fi; \
+chown -R postgres:postgres /var/lib/postgresql; \
+exec gosu postgres /usr/lib/postgresql/16/bin/postgres -D /var/lib/postgresql/data/pgdata -c config_file=/etc/postgresql/postgresql.conf -c hba_file=/etc/postgresql/pg_hba.conf"]
+volumes:
+  pg_data_replica:
+    driver: local
